@@ -1,15 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Home, Building, XCircle, ArrowDown, ArrowUp, Loader } from 'lucide-react';
 import './App.css';
-import doorOpenSound from './asset/door_open.mp3';
-import doorCloseSound from './asset/door_close.mp3';
-
-// 진동 함수 (컴포넌트 최상단에 위치시켜 모든 곳에서 사용 가능하게)
-const vibrate = (pattern) => {
-  if (navigator.vibrate) {
-    navigator.vibrate(pattern);
-  }
-};
 
 export default function App() {
   // State for the actual integer floor the elevator is currently at
@@ -30,9 +21,6 @@ export default function App() {
   const moveIntervalRef = useRef(null);
   // Ref for the door animation timer
   const doorTimerRef = useRef(null);
-  // 오디오 객체 ref
-  const doorOpenAudio = useRef();
-  const doorCloseAudio = useRef();
   
   // Building configuration
   const totalFloors = 21; // B1(0), 1F, 2F, ..., 19F, 20F
@@ -44,11 +32,6 @@ export default function App() {
   const floorMoveTime = 2000; // 2 seconds per floor
   const animationInterval = 50; // 50ms for smooth animation
   const doorAnimationTime = 3000; // 3 seconds
-
-  useEffect(() => {
-    doorOpenAudio.current = new window.Audio(doorOpenSound);
-    doorCloseAudio.current = new window.Audio(doorCloseSound);
-  }, []);
 
   // Helper function to get floor display name
   const getFloorDisplay = (floor) => {
@@ -141,7 +124,6 @@ export default function App() {
     }
     moveIntervalRef.current = setInterval(() => {
       currentStep++;
-      vibrate(20); // 이동 중 짧은 진동
       if (currentStep >= totalSteps) {
         clearInterval(moveIntervalRef.current);
         moveIntervalRef.current = null;
@@ -172,7 +154,6 @@ export default function App() {
 
     moveIntervalRef.current = setInterval(() => {
       currentStep++;
-      vibrate(20); // 이동 중 짧은 진동 (엘리베이터가 실제로 움직일 때마다)
       console.log('Animation step:', currentStep, 'of', totalSteps);
       
       if (currentStep >= totalSteps) {
@@ -241,23 +222,6 @@ export default function App() {
       setMessage('엘리베이터 대기 중');
     }
   }, [callQueue, isMoving, isDoorAnimating, currentFloor, targetFloor, startMovement, doorAnimationTime]);
-
-  // 문 열림/닫힘 효과음 및 진동
-  useEffect(() => {
-    if (isDoorAnimating && message.includes('문 열림')) {
-      if (doorOpenAudio.current) {
-        doorOpenAudio.current.currentTime = 0;
-        doorOpenAudio.current.play();
-      }
-      vibrate([100, 30, 100]);
-    } else if (isDoorAnimating && message.includes('문 닫힘')) {
-      if (doorCloseAudio.current) {
-        doorCloseAudio.current.currentTime = 0;
-        doorCloseAudio.current.play();
-      }
-      vibrate([50, 30, 50]);
-    }
-  }, [isDoorAnimating, message]);
 
   // Cleanup intervals and timeouts on component unmount
   useEffect(() => {
@@ -340,21 +304,16 @@ export default function App() {
                 size={16} 
                 className={`direction-arrow ${isMoving && targetFloor !== null && targetFloor < currentFloor ? "down" : "hidden"}`} 
               />
-              {/* Elevator doors animation */}
-              <div className={`elevator-doors${isDoorAnimating && message.includes('문 열림') ? ' open' : ''}${isDoorAnimating && message.includes('문 닫힘') ? ' close' : ''}`}>
-                <div className="door left"></div>
-                <div className="door right"></div>
-              </div>
-              {/* 멈췄을 때 층수 표시 */}
-              {(!isMoving && !isDoorAnimating) && (
-                <div className="elevator-floor-label">
-                  {getFloorDisplay(currentFloor)}
-                </div>
-              )}
-              {/* 기존 층 표시 */}
               {!isMoving && !isDoorAnimating && (
                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
                   {getFloorDisplay(currentFloor)}
+                </div>
+              )}
+              {isDoorAnimating && (
+                <div className="door-animation">
+                  <div className="door-dot"></div>
+                  <div className="door-dot"></div>
+                  <div className="door-dot"></div>
                 </div>
               )}
             </div>
